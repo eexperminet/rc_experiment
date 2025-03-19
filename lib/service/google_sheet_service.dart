@@ -31,7 +31,7 @@ class GoogleSheetsService {
     if (sheetsApi == null) return;
 
     final formattedDate =
-        DateFormat('yyyy-MM-dd hh:mm:ss').format(experimentDate);
+        DateFormat('yyyy-MM-dd HH:mm:ss').format(experimentDate);
 
     // Step 1: Create a new sheet named after the formatted date
     await sheetsApi.spreadsheets.batchUpdate(

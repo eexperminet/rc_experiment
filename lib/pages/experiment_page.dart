@@ -30,11 +30,14 @@ class ExperimentPageState extends State<ExperimentPage> {
 
   bool isChoiceMade = false;
 
+  bool experimentDone = false;
+
   void handleChoice(ImageChoice choice) {
-    if (isChoiceMade) return;
+    if (isChoiceMade || experimentDone) return;
     choices['$currentIndex'] = choice.name;
 
     if (currentIndex == imagePairs.length - 1) {
+      experimentDone = true;
       ExperimentData.instance.choices = choices;
       Navigator.of(context).pushNamed('/summary');
       return;
@@ -68,8 +71,6 @@ class ExperimentPageState extends State<ExperimentPage> {
                 key.contains('blended_inverse_run_')))
         .toList();
 
-    allAssets.sort();
-
     List<String> runImages = [];
     List<String> inverseRunImages = [];
 
@@ -81,6 +82,33 @@ class ExperimentPageState extends State<ExperimentPage> {
       }
     }
 
+    runImages.sort((a, b) {
+      // Extract the numeric part from the filename
+      final RegExp numericRegex = RegExp(r'blended_run_(\d+)');
+      final aMatch = numericRegex.firstMatch(a);
+      final bMatch = numericRegex.firstMatch(b);
+
+      if (aMatch != null && bMatch != null) {
+        final aIndex = int.parse(aMatch.group(1)!);
+        final bIndex = int.parse(bMatch.group(1)!);
+        return aIndex.compareTo(bIndex);
+      }
+      return a.compareTo(b);
+    });
+
+    inverseRunImages.sort((a, b) {
+      final RegExp numericRegex = RegExp(r'blended_inverse_run_(\d+)');
+      final aMatch = numericRegex.firstMatch(a);
+      final bMatch = numericRegex.firstMatch(b);
+
+      if (aMatch != null && bMatch != null) {
+        final aIndex = int.parse(aMatch.group(1)!);
+        final bIndex = int.parse(bMatch.group(1)!);
+        return aIndex.compareTo(bIndex);
+      }
+      return a.compareTo(b);
+    });
+
     List<List<String>> pairs = [];
     for (int i = 0; i < runImages.length; i++) {
       String leftImagePath = runImages[i];
@@ -88,6 +116,15 @@ class ExperimentPageState extends State<ExperimentPage> {
 
       pairs.add([leftImagePath, rightImagePath]);
     }
+
+    List<Future<void>> precacheFutures = [];
+    for (List<String> pair in pairs) {
+      for (String imagePath in pair) {
+        precacheFutures.add(precacheImage(AssetImage(imagePath), context));
+      }
+    }
+
+    await Future.wait(precacheFutures);
 
     setState(() {
       imagePairs = pairs;
@@ -97,8 +134,17 @@ class ExperimentPageState extends State<ExperimentPage> {
   @override
   Widget build(BuildContext context) {
     if (imagePairs.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 32),
+              Text('Ładowanie danych, proszę czekać...')
+            ],
+          ),
+        ),
       );
     }
 
@@ -133,12 +179,23 @@ class ExperimentPageState extends State<ExperimentPage> {
                     style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
                   ),
                 if (!showMessage)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Column(
                     children: [
-                      Image.asset(currentPair[0], width: 300, height: 300),
-                      const SizedBox(width: 60),
-                      Image.asset(currentPair[1], width: 300, height: 300),
+                      const Text(
+                        "Wybierz obrazek bardziej przedstawiający osobę chorą.",
+                        style: TextStyle(
+                          fontSize: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(currentPair[0], width: 300, height: 300),
+                          const SizedBox(width: 60),
+                          Image.asset(currentPair[1], width: 300, height: 300),
+                        ],
+                      ),
                     ],
                   ),
                 const SizedBox(height: 30),

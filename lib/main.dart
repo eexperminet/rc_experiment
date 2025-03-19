@@ -3,8 +3,24 @@ import 'package:experiment_app/pages/start_page.dart';
 import 'package:experiment_app/pages/summary_page.dart';
 import 'package:flutter/material.dart';
 
+// import 'dart:async';
+// import 'dart:js' as js;
+
+// void simulateArrowPress(String key) {
+//   js.context.callMethod('eval', [
+//     '''
+//     document.dispatchEvent(new KeyboardEvent('keydown', {'key': '$key'}));
+//     document.dispatchEvent(new KeyboardEvent('keyup', {'key': '$key'}));
+//     '''
+//   ]);
+// }
+
 void main() {
   runApp(const MyApp());
+
+  // Timer.periodic(const Duration(seconds: 2), (timer) {
+  //   simulateArrowPress("ArrowLeft");
+  // });
 }
 
 class MyApp extends StatelessWidget {
